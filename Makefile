@@ -1,22 +1,15 @@
 APP=seldep
 
+PLATFORM=local
 
 .PHONY: build
 build: clean
-	DOCKER_BUILDKIT=1 docker build --target bin --output bin/ .
-	#docker build --target bin --output bin/ .
-	#docker build -t seldon .
-	##-v $(pwd)/bin:/workdir/bin
-	#docker run  seldon make compile --target bin --output bin/ .
-
+	DOCKER_BUILDKIT=1 docker build --target bin --output bin/ --platform ${PLATFORM} .
 
 .PHONY: compile
 compile:
-	ls -al
-	CGO_ENABLED=0 GOOS=darwin go build -o bin/app
-	cd bin
-	pwd
-	ls -al
+
+	GOOS=${TARGETOS} GOARCH=${TARGETARCH}  go build -o bin/app-${TARGETOS}-${TARGETARCH}
 
 .PHONY: clean
 clean:

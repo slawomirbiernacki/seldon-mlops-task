@@ -1,4 +1,4 @@
-FROM golang:1.14 AS build
+FROM --platform=${BUILDPLATFORM} golang:1.14.3-alpine AS build
 
 WORKDIR /workdir
 
@@ -9,8 +9,12 @@ COPY go.sum .
 ADD seldonclient seldonclient
 
 ENV GO111MODULE=on
+ENV CGO_ENABLED=0
 
-RUN CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -o bin/app
+ARG TARGETOS
+ARG TARGETARCH
+
+RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH}  go build -o bin/app-${TARGETOS}-${TARGETARCH}
 
 FROM scratch AS bin
-COPY --from=build /workdir/bin/app /
+COPY --from=build /workdir/bin/ /
