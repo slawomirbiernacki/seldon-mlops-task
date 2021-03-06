@@ -20,3 +20,16 @@ https://github.com/SeldonIO/seldon-core/tree/master/examples/auth
 
 
 https://istio.io/latest/docs/setup/platform-setup/kind/
+
+### Requirements
+    Docker min v18.09
+
+### Building from source for local platform
+
+        make
+
+Build for other platform: (list of possible platforms https://golang.org/doc/install/source#environment)
+
+        make PLATFORM=windows/amd64
+
+

@@ -1,19 +1,15 @@
-APP=seldep
-
 PLATFORM=local
 
 .PHONY: build
 build: clean
 	DOCKER_BUILDKIT=1 docker build --target bin --output bin/ --platform ${PLATFORM} .
 
-#.PHONY: build-docker
-#build-docker:
-#	DOCKER_BUILDKIT=1 docker build --target bin --output bin/ --platform ${PLATFORM} .
-#
-#.PHONY: compile
-#compile:
-#
-#	GOOS=${TARGETOS} GOARCH=${TARGETARCH}  go build -o bin/app-${TARGETOS}-${TARGETARCH}
+
+.PHONY: build-all
+build-all: clean
+	make build PLATFORM=linux/amd64
+	make build PLATFORM=darwin/amd64
+
 
 .PHONY: clean
 clean:

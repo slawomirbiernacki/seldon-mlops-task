@@ -2,11 +2,14 @@ package seldonclient
 
 import (
 	"context"
+	"flag"
 	v1 "github.com/seldonio/seldon-core/operator/apis/machinelearning.seldon.io/v1"
 	seldonclientset "github.com/seldonio/seldon-core/operator/client/machinelearning.seldon.io/v1/clientset/versioned"
 	informer "github.com/seldonio/seldon-core/operator/client/machinelearning.seldon.io/v1/informers/externalversions"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	ctrl "sigs.k8s.io/controller-runtime"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/util/homedir"
+	"path/filepath"
 	"time"
 
 	// imported all authentication handlers
@@ -47,20 +50,18 @@ func NewInformerFactory(namespace string) informer.SharedInformerFactory {
 
 //TODO config via file?
 func getSeldonClientSet() (*seldonclientset.Clientset, error) {
-	//var kubeconfig *string
-	//if home := homedir.HomeDir(); home != "" {
-	//	kubeconfig = flag.String("kubeconfig2", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
-	//} else {
-	//	kubeconfig = flag.String("kubeconfig2", "", "absolute path to the kubeconfig file")
-	//}
-	//flag.Parse()
+	var kubeconfig *string
+	if home := homedir.HomeDir(); home != "" {
+		kubeconfig = flag.String("kubeconfig2", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
+	} else {
+		kubeconfig = flag.String("kubeconfig2", "", "absolute path to the kubeconfig file")
+	}
+	flag.Parse()
 
-	config := ctrl.GetConfigOrDie()
-
-	//config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
-	//if err != nil {
-	//	return nil, err
-	//}
+	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
+	if err != nil {
+		return nil, err
+	}
 
 	kubeClientset, err := seldonclientset.NewForConfig(config)
 	if err != nil {
