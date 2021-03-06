@@ -1,0 +1,5 @@
+bin/
+test-resource.yaml
+*.md
+.git
+.cache
