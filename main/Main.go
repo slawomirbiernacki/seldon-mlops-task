@@ -55,12 +55,22 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("status %s.\n", get.Status.State)
+	fmt.Printf("Deployed, status %s.\n", get.Status.State)
 
-	err = DeleteSeldonDeployment(deployment.GetName(), namespace)
+	// update like here : https://github.com/kubernetes/client-go/blob/master/examples/create-update-delete-deployment/main.go
+	replicas := int32(5)
+	get.Spec.Predictors[0].Replicas = &replicas
+
+	_, err = UpdateSeldonDeployment(get, namespace)
 	if err != nil {
 		panic(err)
 	}
+	fmt.Print("Scaled up\n")
+	//prompt()
+	//err = DeleteSeldonDeployment(deployment.GetName(), namespace)
+	//if err != nil {
+	//	panic(err)
+	//}
 }
 
 func runSeldonCRDInformer(stopCh <-chan struct{}, s cache.SharedIndexInformer, namespace string) {
@@ -92,23 +102,14 @@ func create(namespace string) *seldonapi.SeldonDeployment {
 		panic(err)
 	}
 
-	var decUnstructured = yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
+	//FIXME is there a better way?
+	var decodingSerializer = yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
 
 	d := &seldonapi.SeldonDeployment{}
-	//deployment := &unstructured.Unstructured{}
-	// Decode YAML to unstructured object.
-	if _, _, err := decUnstructured.Decode(yamlFile, nil, d); err != nil {
+
+	if _, _, err := decodingSerializer.Decode(yamlFile, nil, d); err != nil {
 		panic(err)
 	}
-
-	// try following https://erwinvaneyk.nl/kubernetes-unstructured-to-typed/
-	//err = runtime.DefaultUnstructuredConverter.
-	//	FromUnstructured(deployment.UnstructuredContent(), d)
-	//if err != nil {
-	//	fmt.Println("could not convert obj to SeldonDeployment")
-	//	fmt.Print(err)
-	//	return
-	//}
 
 	dep, err := CreateSeldonDeployment(d, namespace)
 	if err != nil {
@@ -163,6 +164,10 @@ func DeleteSeldonDeployment(name string, namespace string) (err error) {
 
 func CreateSeldonDeployment(deployment *seldonapi.SeldonDeployment, namespace string) (sdep *seldonapi.SeldonDeployment, err error) {
 	return clientset.MachinelearningV1().SeldonDeployments(namespace).Create(context.TODO(), deployment, metav1.CreateOptions{})
+}
+
+func UpdateSeldonDeployment(deployment *seldonapi.SeldonDeployment, namespace string) (sdep *seldonapi.SeldonDeployment, err error) {
+	return clientset.MachinelearningV1().SeldonDeployments(namespace).Update(context.TODO(), deployment, metav1.UpdateOptions{})
 }
 
 func waitForDeployment(name, namespace string, pollInterval, pollTimeout time.Duration) error {
