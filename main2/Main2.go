@@ -7,10 +7,12 @@ import (
 	"fmt"
 	seldonapi "github.com/seldonio/seldon-core/operator/apis/machinelearning.seldon.io/v1"
 	seldonclientset "github.com/seldonio/seldon-core/operator/client/machinelearning.seldon.io/v1/clientset/versioned"
+	informer "github.com/seldonio/seldon-core/operator/client/machinelearning.seldon.io/v1/informers/externalversions"
 	"io/ioutil"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
 	"os"
@@ -31,6 +33,14 @@ func init() {
 func main() {
 	namespace := "test-aaa"
 
+	factory := informer.NewSharedInformerFactoryWithOptions(clientset, time.Second, informer.WithNamespace(namespace))
+	events := make(chan struct{})
+
+	informerr := factory.Machinelearning().V1().SeldonDeployments().Informer()
+	defer close(events)
+
+	go runSeldonCRDInformer(events, informerr, namespace)
+
 	deployment := create(namespace)
 	name := deployment.GetName()
 
@@ -49,6 +59,35 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func runSeldonCRDInformer(stopCh <-chan struct{}, s cache.SharedIndexInformer, namespace string) {
+	handlers := cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+
+			//d := &seldonapi.SeldonDeployment{}
+			//// try following https://erwinvaneyk.nl/kubernetes-unstructured-to-typed/
+			//err := runtime.DefaultUnstructuredConverter.
+			//	FromUnstructured(obj.(*unstructured.Unstructured).UnstructuredContent(), d)
+			//if err != nil {
+			//	fmt.Println("could not convert obj to SeldonDeployment")
+			//	fmt.Print(err)
+			//	return
+			//}
+			fmt.Printf("Added! %s.\n", obj)
+
+			// do what we want with the SeldonDeployment/event
+		},
+		DeleteFunc: func(obj interface{}) {
+			// convert the obj as above do what we want with the SeldonDeployment/event
+			fmt.Printf("Deleted! %s.\n", obj)
+		},
+		UpdateFunc: func(oldObj, newObj interface{}) {
+			// convert the obj as above do what we want with the SeldonDeployment/event
+		},
+	}
+	s.AddEventHandler(handlers)
+	s.Run(stopCh)
 }
 
 func create(namespace string) *seldonapi.SeldonDeployment {
