@@ -51,6 +51,7 @@ func main() {
 		panic(err)
 	}
 
+	// probably also check number of replicas and other stuff
 	get, err := GetSeldonDeployment(deployment.GetName(), namespace)
 	if err != nil {
 		panic(err)
@@ -58,19 +59,29 @@ func main() {
 	fmt.Printf("Deployed, status %s.\n", get.Status.State)
 
 	// update like here : https://github.com/kubernetes/client-go/blob/master/examples/create-update-delete-deployment/main.go
-	replicas := int32(5)
-	get.Spec.Predictors[0].Replicas = &replicas
+	replicas := int32(2)
+	get.Spec.Predictors[0].Replicas = nil
+	get.Spec.Replicas = &replicas
 
 	_, err = UpdateSeldonDeployment(get, namespace)
 	if err != nil {
 		panic(err)
 	}
+
 	fmt.Print("Scaled up\n")
-	//prompt()
-	//err = DeleteSeldonDeployment(deployment.GetName(), namespace)
-	//if err != nil {
-	//	panic(err)
-	//}
+
+	get, err = GetSeldonDeployment(deployment.GetName(), namespace)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("Status after scalling up %s.\n", get.Status.State)
+
+	//TODO wait until scaled up
+	err = DeleteSeldonDeployment(deployment.GetName(), namespace)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Print("Deleted\n")
 }
 
 func runSeldonCRDInformer(stopCh <-chan struct{}, s cache.SharedIndexInformer, namespace string) {
@@ -149,8 +160,9 @@ func GetSeldonClientSet() (*seldonclientset.Clientset, error) {
 
 	kubeClientset, err := seldonclientset.NewForConfig(config)
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
+
 	return kubeClientset, nil
 }
 
