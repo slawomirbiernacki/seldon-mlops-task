@@ -19,7 +19,6 @@ import (
 	"path/filepath"
 	"time"
 
-	//machinelearningv1 "github.com/seldonio/seldon-core/operator/client/machinelearning.seldon.io/v1/clientset/versioned/typed/machinelearning.seldon.io/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
@@ -33,8 +32,11 @@ func init() {
 func main() {
 	namespace := "test-aaa"
 
+	//FIXME understand resync time
 	factory := informer.NewSharedInformerFactoryWithOptions(clientset, time.Second, informer.WithNamespace(namespace))
 	events := make(chan struct{})
+
+	//FIXME cache sync?
 
 	informerr := factory.Machinelearning().V1().SeldonDeployments().Informer()
 	defer close(events)
@@ -64,26 +66,18 @@ func main() {
 func runSeldonCRDInformer(stopCh <-chan struct{}, s cache.SharedIndexInformer, namespace string) {
 	handlers := cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
-
-			//d := &seldonapi.SeldonDeployment{}
-			//// try following https://erwinvaneyk.nl/kubernetes-unstructured-to-typed/
-			//err := runtime.DefaultUnstructuredConverter.
-			//	FromUnstructured(obj.(*unstructured.Unstructured).UnstructuredContent(), d)
-			//if err != nil {
-			//	fmt.Println("could not convert obj to SeldonDeployment")
-			//	fmt.Print(err)
-			//	return
-			//}
-			fmt.Printf("Added! %s.\n", obj)
+			d := obj.(*seldonapi.SeldonDeployment)
+			fmt.Printf("Added! %s.\n", d.GetName())
 
 			// do what we want with the SeldonDeployment/event
 		},
 		DeleteFunc: func(obj interface{}) {
-			// convert the obj as above do what we want with the SeldonDeployment/event
-			fmt.Printf("Deleted! %s.\n", obj)
+			d := obj.(*seldonapi.SeldonDeployment)
+			fmt.Printf("Deleted! %s.\n", d.GetName())
 		},
 		UpdateFunc: func(oldObj, newObj interface{}) {
-			// convert the obj as above do what we want with the SeldonDeployment/event
+			d := newObj.(*seldonapi.SeldonDeployment)
+			fmt.Printf("Updated! %s.\n", d.Status)
 		},
 	}
 	s.AddEventHandler(handlers)
@@ -173,7 +167,7 @@ func CreateSeldonDeployment(deployment *seldonapi.SeldonDeployment, namespace st
 
 func waitForDeployment(name, namespace string, pollInterval, pollTimeout time.Duration) error {
 	var reason string
-	fmt.Print("Waiting")
+	fmt.Print("Waiting\n")
 	err := wait.PollImmediate(pollInterval, pollTimeout, func() (bool, error) {
 		var err error
 		deployment, err := GetSeldonDeployment(name, namespace)
@@ -183,13 +177,13 @@ func waitForDeployment(name, namespace string, pollInterval, pollTimeout time.Du
 
 		// When the deployment status and its underlying resources reach the desired state, we're done
 		if seldonapi.StatusStateAvailable == deployment.Status.State {
-			fmt.Print("\n")
+			//fmt.Print("\n")
 			return true, nil
 		}
 
 		reason = fmt.Sprintf("deployment status: %#v", deployment.Status)
 
-		fmt.Print(".")
+		//fmt.Print(".")
 		return false, nil
 	})
 
