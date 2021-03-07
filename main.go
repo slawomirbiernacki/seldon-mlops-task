@@ -1,17 +1,13 @@
 package main
 
 import (
-	"bufio"
 	"context"
 	"flag"
 	"fmt"
 	v1 "github.com/seldonio/seldon-core/operator/apis/machinelearning.seldon.io/v1"
-	informer "github.com/seldonio/seldon-core/operator/client/machinelearning.seldon.io/v1/informers/externalversions"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/cache"
 	"os"
 	"seldon-mlops-task/seldonclient"
 	"time"
@@ -42,8 +38,6 @@ func main() {
 	namespace := *namespaceFlag
 	deploymentFile := *deploymentFileFlag
 
-	//listenForEvents("", namespace)
-
 	deployment, err := createDeployment(ctx, namespace, deploymentFile)
 	if err != nil {
 		panic(err)
@@ -51,39 +45,12 @@ func main() {
 
 	go watchDeployment(ctx, deployment, namespace)
 
-	//clientset, err := kubernetes.NewForConfig(seldonclient.Config)
-	//if err != nil {
-	//	panic(err)
-	//}
-
-	//dep, err := seldonclient.GetSeldonDeployment(ctx, name, namespace)
-
-	//scheme :=runtime.NewScheme()
-	//v1.AddToScheme(scheme)
-	//events, err := clientset.CoreV1().Events(namespace).Search(scheme, deployment)
-	//if err != nil {
-	//	panic(err)
-	//}
-	//
-	//fmt.Printf("Events count: %d\n", len(events.Items))
-
 	name := deployment.GetName()
 
 	err = seldonclient.WaitForDeploymentStatus(ctx, name, namespace, v1.StatusStateAvailable, time.Second, 100*time.Second)
 	if err != nil {
 		panic(err)
 	}
-
-	//get, err := seldonclient.GetSeldonDeployment(ctx, name, namespace)
-	//if err != nil {
-	//	panic(err)
-	//}
-	//events, err = clientset.CoreV1().Events(namespace).Search(scheme, get)
-	//if err != nil {
-	//	panic(err)
-	//}
-	//
-	//fmt.Printf("Events count2: %d\n", len(events.Items))
 
 	replicas := 2
 
@@ -103,15 +70,11 @@ func main() {
 		panic(err)
 	}
 
-	//TODO wait for delete!!!!!
-	//prompt()
-	//_, err = seldonclient.GetSeldonDeployment(ctx, name, namespace)
-	//if err != nil {
-	//	panic(err)
-	//}
 	fmt.Print("Waiting for removal!\n")
-	seldonclient.WaitUntilDeploymentDeleted(ctx, name, namespace, time.Second, 100*time.Second)
-
+	err = seldonclient.WaitUntilDeploymentDeleted(ctx, name, namespace, time.Second, 100*time.Second)
+	if err != nil {
+		panic(err)
+	}
 	fmt.Print("Finished!\n")
 }
 
@@ -122,7 +85,10 @@ func watchDeployment(ctx context.Context, deployment *v1.SeldonDeployment, names
 	}
 
 	scheme := runtime.NewScheme()
-	v1.AddToScheme(scheme)
+	err = v1.AddToScheme(scheme)
+	if err != nil {
+		panic(err)
+	}
 	//var lastEventsVersion = ""
 
 	seen := make(map[types.UID]bool)
@@ -156,46 +122,6 @@ func watchDeployment(ctx context.Context, deployment *v1.SeldonDeployment, names
 	}
 }
 
-//FIXME filter by name!
-func listenForEvents(seldonDeployment, namespace string) {
-	factory := seldonclient.NewInformerFactory(namespace)
-	events := make(chan struct{})
-	//FIXME
-	//defer close(events)
-
-	//FIXME cache sync? figure out how to start and stop correctly
-
-	informerr := factory.Machinelearning().V1().SeldonDeployments().Informer()
-	runSeldonCRDInformer(events, informerr, namespace)
-	factoryStart(factory) // coroutine?
-}
-
-func factoryStart(factory informer.SharedInformerFactory) {
-	factory.WaitForCacheSync(wait.NeverStop)
-	factory.Start(wait.NeverStop)
-}
-
-func runSeldonCRDInformer(stopCh <-chan struct{}, s cache.SharedIndexInformer, namespace string) {
-	handlers := cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
-			d := obj.(*v1.SeldonDeployment)
-			fmt.Printf("Added! %s.\n", d.GetName())
-
-			// do what we want with the SeldonDeployment/event
-		},
-		DeleteFunc: func(obj interface{}) {
-			d := obj.(*v1.SeldonDeployment)
-			fmt.Printf("Deleted! %s.\n", d.GetName())
-		},
-		UpdateFunc: func(oldObj, newObj interface{}) {
-			d := newObj.(*v1.SeldonDeployment)
-			fmt.Printf("Updated! %v\n", d.Status.Description)
-		},
-	}
-	s.AddEventHandler(handlers)
-	//s.Run(stopCh)
-}
-
 func createDeployment(ctx context.Context, namespace, deploymentFilePath string) (*v1.SeldonDeployment, error) {
 
 	deployment, err := seldonclient.ParseDeploymentFromFile(deploymentFilePath)
@@ -211,16 +137,4 @@ func createDeployment(ctx context.Context, namespace, deploymentFilePath string)
 	fmt.Printf("Created deployment %q.\n", deployment.GetName())
 
 	return deployment, nil
-}
-
-func prompt() {
-	fmt.Printf("-> Press Return key to continue.\n")
-	scanner := bufio.NewScanner(os.Stdin)
-	for scanner.Scan() {
-		break
-	}
-	if err := scanner.Err(); err != nil {
-		panic(err)
-	}
-	fmt.Println()
 }
