@@ -36,7 +36,7 @@ func main() {
 	go seldonclient.WatchDeploymentEvents(ctx, deployment, namespace)
 
 	fmt.Println("Waiting for deployment to become available...")
-	err = seldonclient.WaitForDeploymentStatus(ctx, name, namespace, v1.StatusStateAvailable, time.Second, 100*time.Second)
+	err = seldonclient.WaitForDeploymentStatus(ctx, name, namespace, v1.StatusStateAvailable, pollTimeout)
 	if err != nil {
 		panic(err)
 	}
@@ -49,7 +49,7 @@ func main() {
 	}
 
 	fmt.Println("Waiting for pods...")
-	err = seldonclient.WaitForScale(ctx, name, namespace, replicas, time.Second, 100*time.Second)
+	err = seldonclient.WaitForScale(ctx, name, namespace, replicas, pollTimeout)
 	if err != nil {
 		panic(err)
 	}
@@ -61,7 +61,7 @@ func main() {
 	}
 
 	fmt.Println("Waiting for deletion...")
-	err = seldonclient.WaitUntilDeploymentDeleted(ctx, name, namespace, time.Second, 100*time.Second)
+	err = seldonclient.WaitUntilDeploymentDeleted(ctx, name, namespace, pollTimeout)
 	if err != nil {
 		panic(err)
 	}

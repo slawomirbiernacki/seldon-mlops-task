@@ -24,16 +24,16 @@ func ScaleDeployment(ctx context.Context, name, namespace string, scale int) err
 	return nil
 }
 
-// This is quite arbitrary, just override any settings with general replica count
+// Arbitrary, just override any settings with general replica count
 func updateDeploymentScale(deployment *v1.SeldonDeployment, scale int) {
-	//TODO test, and is there a better way?
 	replicas := int32(scale)
-	//Override any nested replica settings
-	for i := range deployment.Spec.Predictors {
-		deployment.Spec.Predictors[i].Replicas = nil
-		for j := range deployment.Spec.Predictors[i].ComponentSpecs {
-			deployment.Spec.Predictors[i].ComponentSpecs[j].Replicas = nil
+	deployment.Spec.Replicas = &replicas
+
+	//Unset any nested replica settings to make update effective
+	for predIdx := range deployment.Spec.Predictors {
+		deployment.Spec.Predictors[predIdx].Replicas = nil
+		for compIdx := range deployment.Spec.Predictors[predIdx].ComponentSpecs {
+			deployment.Spec.Predictors[predIdx].ComponentSpecs[compIdx].Replicas = nil
 		}
 	}
-	deployment.Spec.Replicas = &replicas
 }

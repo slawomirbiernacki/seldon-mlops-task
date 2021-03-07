@@ -9,11 +9,13 @@ import (
 	"time"
 )
 
+const PollInterval = time.Second
+
 //FIXME flag for timeout
-func WaitForDeploymentStatus(ctx context.Context, deploymentName, namespace string, status v1.StatusState, pollInterval, pollTimeout time.Duration) error {
+func WaitForDeploymentStatus(ctx context.Context, deploymentName, namespace string, status v1.StatusState, pollTimeout time.Duration) error {
 
 	fmt.Printf("Waiting for status: %s of deployment %s \n", status, deploymentName)
-	err := wait.PollImmediate(pollInterval, pollTimeout, func() (bool, error) {
+	err := wait.PollImmediate(PollInterval, pollTimeout, func() (bool, error) {
 		var err error
 		deployment, err := GetSeldonDeployment(ctx, deploymentName, namespace)
 		if err != nil {
@@ -37,10 +39,10 @@ func WaitForDeploymentStatus(ctx context.Context, deploymentName, namespace stri
 }
 
 //TODO name
-func WaitForScale(ctx context.Context, deploymentName, namespace string, scale int, pollInterval, pollTimeout time.Duration) error {
+func WaitForScale(ctx context.Context, deploymentName, namespace string, scale int, pollTimeout time.Duration) error {
 
 	fmt.Printf("Waiting for deployment %s to reach target replica count\n", deploymentName)
-	err := wait.PollImmediate(pollInterval, pollTimeout, func() (bool, error) {
+	err := wait.PollImmediate(PollInterval, pollTimeout, func() (bool, error) {
 		var err error
 		deployment, err := GetSeldonDeployment(ctx, deploymentName, namespace)
 		if err != nil {
@@ -50,7 +52,8 @@ func WaitForScale(ctx context.Context, deploymentName, namespace string, scale i
 		replicas := int32(scale)
 		finished := true
 		for _, deploymentStatus := range deployment.Status.DeploymentStatus {
-			if deploymentStatus.AvailableReplicas != replicas {
+			// Quite arbitrary, would need to have more kubernetes knowledge to be confident this is the right assertion
+			if deploymentStatus.AvailableReplicas != replicas && deploymentStatus.Replicas != replicas {
 				finished = false
 			}
 		}
@@ -65,9 +68,9 @@ func WaitForScale(ctx context.Context, deploymentName, namespace string, scale i
 	return nil
 }
 
-func WaitUntilDeploymentDeleted(ctx context.Context, deploymentName, namespace string, pollInterval, pollTimeout time.Duration) error {
+func WaitUntilDeploymentDeleted(ctx context.Context, deploymentName, namespace string, pollTimeout time.Duration) error {
 
-	err := wait.PollImmediate(pollInterval, pollTimeout, func() (bool, error) {
+	err := wait.PollImmediate(PollInterval, pollTimeout, func() (bool, error) {
 		var err error
 		_, err = GetSeldonDeployment(ctx, deploymentName, namespace)
 
