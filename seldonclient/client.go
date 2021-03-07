@@ -6,6 +6,7 @@ import (
 	seldonclientset "github.com/seldonio/seldon-core/operator/client/machinelearning.seldon.io/v1/clientset/versioned"
 	informer "github.com/seldonio/seldon-core/operator/client/machinelearning.seldon.io/v1/informers/externalversions"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"time"
 
@@ -14,35 +15,39 @@ import (
 )
 
 //TODO possibly wrap whole seldon in a struct?
-var clientset *seldonclientset.Clientset
+var seldonClientset *seldonclientset.Clientset
+
+//FIXME remove
+var Config *rest.Config
 
 func init() {
 	var err error
-	clientset, err = getSeldonClientSet()
+	seldonClientset, err = getSeldonClientSet()
+
 	if err != nil {
 		panic(err)
 	}
 }
 
 func GetSeldonDeployment(ctx context.Context, name string, namespace string) (*v1.SeldonDeployment, error) {
-	return clientset.MachinelearningV1().SeldonDeployments(namespace).Get(ctx, name, metav1.GetOptions{})
+	return seldonClientset.MachinelearningV1().SeldonDeployments(namespace).Get(ctx, name, metav1.GetOptions{})
 }
 
 func DeleteSeldonDeployment(ctx context.Context, name string, namespace string) (err error) {
-	return clientset.MachinelearningV1().SeldonDeployments(namespace).Delete(ctx, name, metav1.DeleteOptions{})
+	return seldonClientset.MachinelearningV1().SeldonDeployments(namespace).Delete(ctx, name, metav1.DeleteOptions{})
 }
 
 func CreateSeldonDeployment(ctx context.Context, deployment *v1.SeldonDeployment, namespace string) (*v1.SeldonDeployment, error) {
-	return clientset.MachinelearningV1().SeldonDeployments(namespace).Create(ctx, deployment, metav1.CreateOptions{})
+	return seldonClientset.MachinelearningV1().SeldonDeployments(namespace).Create(ctx, deployment, metav1.CreateOptions{})
 }
 
 func UpdateSeldonDeployment(ctx context.Context, deployment *v1.SeldonDeployment, namespace string) (*v1.SeldonDeployment, error) {
-	return clientset.MachinelearningV1().SeldonDeployments(namespace).Update(ctx, deployment, metav1.UpdateOptions{})
+	return seldonClientset.MachinelearningV1().SeldonDeployments(namespace).Update(ctx, deployment, metav1.UpdateOptions{})
 }
 
 //FIXME filter only to current deployment, what with the resyncing time?
 func NewInformerFactory(namespace string) informer.SharedInformerFactory {
-	return informer.NewSharedInformerFactoryWithOptions(clientset, time.Second*30, informer.WithNamespace(namespace))
+	return informer.NewSharedInformerFactoryWithOptions(seldonClientset, time.Second*30, informer.WithNamespace(namespace))
 }
 
 func getSeldonClientSet() (*seldonclientset.Clientset, error) {
@@ -53,6 +58,7 @@ func getSeldonClientSet() (*seldonclientset.Clientset, error) {
 	if err != nil {
 		return nil, err
 	}
+	Config = config
 
 	return kubeClientset, nil
 }

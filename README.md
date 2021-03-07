@@ -41,3 +41,11 @@ Build for other platform: (list of possible platforms https://golang.org/doc/ins
 ### Improvements
 
     switch to dynamic client to avoid dependencies
+    build is long - dont know how to cache with mod and go sth 0
+    use events for waiting
+
+scaling arbitrary, no scalling orchestrator or components
+
+event based instead of waiting
+
+https://docs.seldon.io/projects/seldon-core/en/v1.1.0/examples/autoscaling_example.html

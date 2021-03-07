@@ -1,19 +1,22 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"flag"
 	"fmt"
 	v1 "github.com/seldonio/seldon-core/operator/apis/machinelearning.seldon.io/v1"
-	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"os"
 	"seldon-mlops-task/seldonclient"
 	"time"
 )
 
-var namespaceFlag = flag.String("n", "", "Namespace for your seldon deployment")
-var deploymentFileFlag = flag.String("f", "", "Path to your deployment file")
+//FIXME remove defaults
+var namespaceFlag = flag.String("n", "test-aaa", "Namespace for your seldon deployment")
+var deploymentFileFlag = flag.String("f", "test-resource.yaml", "Path to your deployment file")
 
 func main() {
 	flag.Parse()
@@ -45,56 +48,48 @@ func main() {
 
 	name := deployment.GetName()
 
-	err = waitForDeployment(name, namespace, time.Second, 100*time.Second)
+	err = seldonclient.WaitForDeploymentStatus(ctx, name, namespace, v1.StatusStateAvailable, time.Second, 100*time.Second)
 	if err != nil {
 		panic(err)
 	}
 
-	// probably also check number of replicas and other stuff
-	get, err := seldonclient.GetSeldonDeployment(context.TODO(), deployment.GetName(), namespace)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Printf("Deployed, status %s.\n", get.Status.State)
+	replicas := 2
 
-	// update like here : https://github.com/kubernetes/client-go/blob/master/examples/create-update-delete-deployment/main.go
-	replicas := int32(2)
-	get.Spec.Predictors[0].Replicas = nil
-	get.Spec.Replicas = &replicas
-
-	_, err = seldonclient.UpdateSeldonDeployment(context.TODO(), get, namespace)
+	err = seldonclient.ScaleDeployment(ctx, name, namespace, replicas)
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Print("Scaled up\n")
+	clientset, err := kubernetes.NewForConfig(seldonclient.Config)
+	dep, err := seldonclient.GetSeldonDeployment(ctx, name, namespace)
+	events, err := clientset.CoreV1().Events(namespace).Search(runtime.NewScheme(), dep)
 
-	get, err = seldonclient.GetSeldonDeployment(context.TODO(), deployment.GetName(), namespace)
+	print(events)
+
+	err = seldonclient.WaitForScale(ctx, name, namespace, replicas, time.Second, 100*time.Second)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("Status after scalling up %s.\n", get.Status.State)
 
-	//TODO wait until scaled up
-	err = seldonclient.DeleteSeldonDeployment(context.TODO(), deployment.GetName(), namespace)
+	err = seldonclient.DeleteSeldonDeployment(ctx, name, namespace)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Print("Deleted\n")
+	fmt.Print("Finished!\n")
 }
 
-//FIXME filter by name
+//FIXME filter by name!
 func listenForEvents(seldonDeployment, namespace string) {
 	factory := seldonclient.NewInformerFactory(namespace)
 	events := make(chan struct{})
-	defer close(events)
+	//FIXME
+	//defer close(events)
 
 	//FIXME cache sync? figure out how to start and stop correctly
 	//factory.Start(wait.NeverStop)
 	//factory.WaitForCacheSync(wait.NeverStop)
 
 	informerr := factory.Machinelearning().V1().SeldonDeployments().Informer()
-
 	go runSeldonCRDInformer(events, informerr, namespace)
 }
 
@@ -112,7 +107,7 @@ func runSeldonCRDInformer(stopCh <-chan struct{}, s cache.SharedIndexInformer, n
 		},
 		UpdateFunc: func(oldObj, newObj interface{}) {
 			d := newObj.(*v1.SeldonDeployment)
-			fmt.Printf("Updated! %s.\n", d.Status)
+			fmt.Printf("Updated! %v\n", d.Status.Description)
 		},
 	}
 	s.AddEventHandler(handlers)
@@ -136,33 +131,14 @@ func createDeployment(ctx context.Context, namespace, deploymentFilePath string)
 	return deployment, nil
 }
 
-func waitForDeployment(name, namespace string, pollInterval, pollTimeout time.Duration) error {
-	var reason string
-	fmt.Print("Waiting\n")
-	err := wait.PollImmediate(pollInterval, pollTimeout, func() (bool, error) {
-		var err error
-		deployment, err := seldonclient.GetSeldonDeployment(context.TODO(), name, namespace)
-		if err != nil {
-			return false, err
-		}
-
-		// When the deployment status and its underlying resources reach the desired state, we're done
-		if v1.StatusStateAvailable == deployment.Status.State {
-			//fmt.Print("\n")
-			return true, nil
-		}
-
-		reason = fmt.Sprintf("deployment status: %#v", deployment.Status)
-
-		//fmt.Print(".")
-		return false, nil
-	})
-
-	if err == wait.ErrWaitTimeout {
-		err = fmt.Errorf("%s", reason)
+func prompt() {
+	fmt.Printf("-> Press Return key to continue.\n")
+	scanner := bufio.NewScanner(os.Stdin)
+	for scanner.Scan() {
+		break
 	}
-	if err != nil {
-		return fmt.Errorf("error waiting for deployment %q status to match expectation: %v", name, err)
+	if err := scanner.Err(); err != nil {
+		panic(err)
 	}
-	return nil
+	fmt.Println()
 }
