@@ -5,7 +5,7 @@ import (
 	"flag"
 	"fmt"
 	v1 "github.com/seldonio/seldon-core/operator/apis/machinelearning.seldon.io/v1"
-	"seldon-mlops-task/seldonclient"
+	"seldon-mlops-task/operation"
 	"seldon-mlops-task/utils"
 	"time"
 )
@@ -33,35 +33,35 @@ func main() {
 	}
 	name := deployment.GetName()
 
-	go seldonclient.WatchDeploymentEvents(ctx, deployment, namespace)
+	go operation.WatchDeploymentEvents(ctx, deployment, namespace)
 
 	fmt.Println("Waiting for deployment to become available...")
-	err = seldonclient.WaitForDeploymentStatus(ctx, name, namespace, v1.StatusStateAvailable, pollTimeout)
+	err = operation.WaitUntilDeploymentStatus(ctx, name, namespace, v1.StatusStateAvailable, pollTimeout)
 	if err != nil {
 		panic(err)
 	}
 
 	fmt.Printf("Deployed, scalling to %d replicas \n", replicas)
 
-	err = seldonclient.ScaleDeployment(ctx, name, namespace, replicas)
+	err = operation.ScaleDeployment(ctx, name, namespace, replicas)
 	if err != nil {
 		panic(err)
 	}
 
 	fmt.Println("Waiting for pods...")
-	err = seldonclient.WaitForScale(ctx, name, namespace, replicas, pollTimeout)
+	err = operation.WaitUntilDeploymentScaled(ctx, name, namespace, replicas, pollTimeout)
 	if err != nil {
 		panic(err)
 	}
 
 	fmt.Printf("Scaled to %d replicas, deleting deployment\n", replicas)
-	err = seldonclient.DeleteSeldonDeployment(ctx, name, namespace)
+	err = operation.DeleteSeldonDeployment(ctx, name, namespace)
 	if err != nil {
 		panic(err)
 	}
 
 	fmt.Println("Waiting for deletion...")
-	err = seldonclient.WaitUntilDeploymentDeleted(ctx, name, namespace, pollTimeout)
+	err = operation.WaitUntilDeploymentDeleted(ctx, name, namespace, pollTimeout)
 	if err != nil {
 		panic(err)
 	}
@@ -77,7 +77,7 @@ func createDeployment(ctx context.Context, namespace, deploymentFilePath string)
 		return nil, err
 	}
 
-	deployment, err = seldonclient.CreateSeldonDeployment(ctx, deployment, namespace)
+	deployment, err = operation.CreateSeldonDeployment(ctx, deployment, namespace)
 	if err != nil {
 		return nil, err
 	}

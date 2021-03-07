@@ -1,4 +1,4 @@
-package seldonclient
+package operation
 
 import (
 	"context"

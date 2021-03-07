@@ -1,4 +1,4 @@
-package seldonclient
+package operation
 
 import (
 	"context"
@@ -13,7 +13,7 @@ func ScaleDeployment(ctx context.Context, name, namespace string, scale int) err
 		if err != nil {
 			return fmt.Errorf("failed to get latest version of deployment: %v", err)
 		}
-		updateDeploymentScale(deployment, scale)
+		updateScale(deployment, scale)
 
 		_, err = UpdateSeldonDeployment(ctx, deployment, namespace)
 		return err
@@ -24,8 +24,8 @@ func ScaleDeployment(ctx context.Context, name, namespace string, scale int) err
 	return nil
 }
 
-// Arbitrary, just override any settings with general replica count
-func updateDeploymentScale(deployment *v1.SeldonDeployment, scale int) {
+// Arbitrary, just override any settings with general replica count. Ignoring svcOrchSpec.replicas .
+func updateScale(deployment *v1.SeldonDeployment, scale int) {
 	replicas := int32(scale)
 	deployment.Spec.Replicas = &replicas
 
