@@ -7,6 +7,7 @@ spec:
   predictors:
     - componentSpecs:
         - spec:
+            replicas: 3
             containers:
               - image: seldonio/mock_classifier:1.5.0
                 name: classifier
@@ -17,4 +18,4 @@ spec:
         name: classifier
         type: MODEL
       name: example
-      replicas: 1
+      replicas: 3

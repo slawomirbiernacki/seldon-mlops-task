@@ -52,3 +52,6 @@ https://docs.seldon.io/projects/seldon-core/en/v1.1.0/examples/autoscaling_examp
 
 events - considered informer, considered filtering versions, chosen solution to mimic kubectl describe. 
 ever growing list, prob not good for long running apps but here ok
+
+
+could probably use background policy for removal

@@ -9,6 +9,7 @@ import (
 	"time"
 )
 
+//FIXME flag for timeout
 func WaitForDeploymentStatus(ctx context.Context, deploymentName, namespace string, status v1.StatusState, pollInterval, pollTimeout time.Duration) error {
 
 	fmt.Printf("Waiting for status: %s of deployment %s \n", status, deploymentName)

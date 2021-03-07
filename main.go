@@ -5,9 +5,6 @@ import (
 	"flag"
 	"fmt"
 	v1 "github.com/seldonio/seldon-core/operator/apis/machinelearning.seldon.io/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/kubernetes"
 	"os"
 	"seldon-mlops-task/seldonclient"
 	"time"
@@ -32,7 +29,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Println("Starting deployment")
+	fmt.Println("Deploying...")
 	ctx := context.Background()
 
 	namespace := *namespaceFlag
@@ -43,7 +40,7 @@ func main() {
 		panic(err)
 	}
 
-	go watchDeployment(ctx, deployment, namespace)
+	go seldonclient.WatchDeployment(ctx, deployment, namespace)
 
 	name := deployment.GetName()
 
@@ -76,50 +73,6 @@ func main() {
 		panic(err)
 	}
 	fmt.Print("Finished!\n")
-}
-
-func watchDeployment(ctx context.Context, deployment *v1.SeldonDeployment, namespace string) {
-	clientset, err := kubernetes.NewForConfig(seldonclient.Config)
-	if err != nil {
-		panic(err)
-	}
-
-	scheme := runtime.NewScheme()
-	err = v1.AddToScheme(scheme)
-	if err != nil {
-		panic(err)
-	}
-	//var lastEventsVersion = ""
-
-	seen := make(map[types.UID]bool)
-
-	for i := 0; i < 160; i++ { //implement proper loop
-		events, err := clientset.CoreV1().Events(namespace).Search(scheme, deployment)
-		if err != nil {
-			panic(err)
-		}
-
-		for _, event := range events.Items {
-
-			if !seen[event.UID] {
-				fmt.Printf("Event: UUID: %s, Version:%s,  Type: %s, FROM: %s, Reason: %s, message:%s, \n", event.UID, event.ResourceVersion, event.Type, event.Source.Component, event.Reason, event.Message)
-				seen[event.UID] = true
-			}
-
-			//if len(lastEventsVersion) == 0{
-			//	fmt.Printf("Event: UUID: %s, Version:%s,  Type: %s, Reason: %s, message:%s, \n", event.UID, event.ResourceVersion, event.Type, event.Reason,event.Message)
-			//}else{
-			//	if event.ResourceVersion > lastEventsVersion{
-			//		fmt.Printf("Event2: UUID: %s, Version:%s,  Type: %s, Reason: %s, message:%s, \n", event.UID, event.ResourceVersion, event.Type, event.Reason,event.Message)
-			//	}
-			//}
-
-		}
-		//lastEventsVersion = events.ResourceVersion
-		//fmt.Printf("lastEventsVersion updated to: %s \n", lastEventsVersion)
-
-		time.Sleep(2 * time.Second)
-	}
 }
 
 func createDeployment(ctx context.Context, namespace, deploymentFilePath string) (*v1.SeldonDeployment, error) {
