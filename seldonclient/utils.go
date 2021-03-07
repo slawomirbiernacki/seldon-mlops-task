@@ -20,7 +20,6 @@ func ParseDeploymentFromFile(path string) (*v1.SeldonDeployment, error) {
 		return nil, err
 	}
 
-	//FIXME is there a better way?
 	var decodingSerializer = yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
 
 	deployment := &v1.SeldonDeployment{}

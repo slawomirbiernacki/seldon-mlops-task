@@ -23,6 +23,7 @@ https://istio.io/latest/docs/setup/platform-setup/kind/
 
 ### Requirements
     Docker min v18.09
+    Kubernetes cluster min v1.17.0 with istio and seldon core
 
 ### Building from source for local platform
 
@@ -33,3 +34,10 @@ Build for other platform: (list of possible platforms https://golang.org/doc/ins
         make PLATFORM=windows/amd64
 
 
+### Usage
+    Have kube config in .kube
+
+    ./bin/app 
+### Improvements
+
+    switch to dynamic client to avoid dependencies

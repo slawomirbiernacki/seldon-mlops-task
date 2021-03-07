@@ -2,31 +2,41 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	v1 "github.com/seldonio/seldon-core/operator/apis/machinelearning.seldon.io/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
+	"os"
 	"seldon-mlops-task/seldonclient"
 	"time"
 )
 
+var namespaceFlag = flag.String("n", "", "Namespace for your seldon deployment")
+var deploymentFileFlag = flag.String("f", "", "Path to your deployment file")
+
 func main() {
-	fmt.Println("Running the TestApp")
+	flag.Parse()
+
+	if namespaceFlag == nil || len(*namespaceFlag) == 0 {
+		fmt.Println("Provide namespace")
+		flag.PrintDefaults()
+		os.Exit(1)
+	}
+
+	if deploymentFileFlag == nil || len(*deploymentFileFlag) == 0 {
+		fmt.Println("Provide deployment file")
+		flag.PrintDefaults()
+		os.Exit(1)
+	}
+
+	fmt.Println("Starting deployment")
 	ctx := context.Background()
-	namespace := "test-aaa"
-	deploymentFile := "./test-resource.yaml"
 
-	factory := seldonclient.NewInformerFactory(namespace)
-	events := make(chan struct{})
-	defer close(events)
+	namespace := *namespaceFlag
+	deploymentFile := *deploymentFileFlag
 
-	//FIXME cache sync? figure out how to start and stop correctly
-	//factory.Start(wait.NeverStop)
-	//factory.WaitForCacheSync(wait.NeverStop)
-
-	informerr := factory.Machinelearning().V1().SeldonDeployments().Informer()
-
-	go runSeldonCRDInformer(events, informerr, namespace)
+	listenForEvents("", namespace)
 
 	deployment, err := createDeployment(ctx, namespace, deploymentFile)
 	if err != nil {
@@ -71,6 +81,21 @@ func main() {
 		panic(err)
 	}
 	fmt.Print("Deleted\n")
+}
+
+//FIXME filter by name
+func listenForEvents(seldonDeployment, namespace string) {
+	factory := seldonclient.NewInformerFactory(namespace)
+	events := make(chan struct{})
+	defer close(events)
+
+	//FIXME cache sync? figure out how to start and stop correctly
+	//factory.Start(wait.NeverStop)
+	//factory.WaitForCacheSync(wait.NeverStop)
+
+	informerr := factory.Machinelearning().V1().SeldonDeployments().Informer()
+
+	go runSeldonCRDInformer(events, informerr, namespace)
 }
 
 func runSeldonCRDInformer(stopCh <-chan struct{}, s cache.SharedIndexInformer, namespace string) {
