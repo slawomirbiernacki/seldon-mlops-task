@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	v1 "github.com/seldonio/seldon-core/operator/apis/machinelearning.seldon.io/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"time"
 )
@@ -60,5 +61,29 @@ func WaitForScale(ctx context.Context, deploymentName, namespace string, scale i
 	}
 
 	fmt.Printf("Deployment %s reached target replica count\n", deploymentName)
+	return nil
+}
+
+func WaitUntilDeploymentDeleted(ctx context.Context, deploymentName, namespace string, pollInterval, pollTimeout time.Duration) error {
+
+	err := wait.PollImmediate(pollInterval, pollTimeout, func() (bool, error) {
+		var err error
+		_, err = GetSeldonDeployment(ctx, deploymentName, namespace)
+
+		if err != nil {
+			if errors.IsNotFound(err) {
+				return true, nil
+			}
+
+			return false, err
+		}
+
+		return false, nil
+	})
+
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

@@ -49,3 +49,6 @@ scaling arbitrary, no scalling orchestrator or components
 event based instead of waiting
 
 https://docs.seldon.io/projects/seldon-core/en/v1.1.0/examples/autoscaling_example.html
+
+events - considered informer, considered filtering versions, chosen solution to mimic kubectl describe. 
+ever growing list, prob not good for long running apps but here ok
