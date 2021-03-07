@@ -60,7 +60,7 @@ func deploymentInterface(namespace string) clientv1.SeldonDeploymentInterface {
 	return seldonClientset.MachinelearningV1().SeldonDeployments(namespace)
 }
 
-func WatchDeployment(ctx context.Context, deployment *v1.SeldonDeployment, namespace string) {
+func WatchDeploymentEvents(ctx context.Context, deployment *v1.SeldonDeployment, namespace string) {
 	scheme := runtime.NewScheme()
 	err := v1.AddToScheme(scheme)
 	if err != nil {
