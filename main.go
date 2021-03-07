@@ -5,38 +5,28 @@ import (
 	"flag"
 	"fmt"
 	v1 "github.com/seldonio/seldon-core/operator/apis/machinelearning.seldon.io/v1"
-	"os"
 	"seldon-mlops-task/seldonclient"
 	"seldon-mlops-task/utils"
 	"time"
 )
 
-//FIXME remove defaults
-var namespaceFlag = flag.String("n", "test-aaa", "Namespace for your seldon deployment")
-var deploymentFileFlag = flag.String("f", "test-resource.yaml", "Path to your deployment file")
-var replicas = 2
+var namespace string
+var deploymentFile string
+var pollTimeout time.Duration
+var replicas int
+
+func init() {
+	flag.StringVar(&namespace, "n", "default", "Namespace for your seldon deployment")
+	flag.StringVar(&deploymentFile, "f", "test-resource.yaml", "Path to your deployment file")
+	flag.DurationVar(&pollTimeout, "pt", 120*time.Second, "Poling timeout for any wait operations; eg waiting for deployment availability")
+	flag.IntVar(&replicas, "r", 2, "Replica number to scale to during program operation")
+}
 
 func main() {
 	flag.Parse()
 	ctx := context.Background()
 
-	if namespaceFlag == nil || len(*namespaceFlag) == 0 {
-		fmt.Println("Provide namespace")
-		flag.PrintDefaults()
-		os.Exit(1)
-	}
-
-	if deploymentFileFlag == nil || len(*deploymentFileFlag) == 0 {
-		fmt.Println("Provide deployment file")
-		flag.PrintDefaults()
-		os.Exit(1)
-	}
-
-	//dereferencing after nil checks
-	namespace := *namespaceFlag
-	deploymentFile := *deploymentFileFlag
-
-	fmt.Println("Deploying resource")
+	fmt.Printf("Deploying resource to namespace %s\n", namespace)
 	deployment, err := createDeployment(ctx, namespace, deploymentFile)
 	if err != nil {
 		panic(err)

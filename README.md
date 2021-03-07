@@ -37,6 +37,11 @@ Build for other platform: (list of possible platforms https://golang.org/doc/ins
 ### Usage
     Have kube config in .kube
 
+    deploys to default namespace by default
+    deploys test resource by default
+
+use -h for help
+
     ./bin/app 
 ### Improvements
 
