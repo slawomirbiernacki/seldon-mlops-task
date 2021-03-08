@@ -42,7 +42,7 @@ func (ep *EventProcessor) ProcessNew(eventProcessor func(event corev1.Event) err
 	return nil
 }
 
-// Stateful event processor.
+// Stateful event processor. It has a cache to remember processed events. Quite naive and probably not good idea for production code, pragmatically assumed here it's ok.
 func NewEventProcessor(deployment *seldonv1.SeldonDeployment, namespace string) *EventProcessor {
 	watcher := &EventProcessor{
 		seen:       make(map[types.UID]bool),
