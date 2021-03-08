@@ -5,9 +5,9 @@ import (
 	"flag"
 	"fmt"
 	v1 "github.com/seldonio/seldon-core/operator/apis/machinelearning.seldon.io/v1"
+	"github.com/slawomirbiernacki/seldon-mlops-task/seldondeployment"
+	"github.com/slawomirbiernacki/seldon-mlops-task/utils"
 	corev1 "k8s.io/api/core/v1"
-	"seldon-mlops-task/seldondeployment"
-	"seldon-mlops-task/utils"
 	"sync"
 	"time"
 )
