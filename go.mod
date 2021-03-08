@@ -1,4 +1,4 @@
-module seldon-mlops-task
+module github.com/slawomirbiernacki/seldon-mlops-task
 
 go 1.14
 
