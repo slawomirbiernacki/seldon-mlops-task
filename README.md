@@ -1,5 +1,23 @@
-# seldon-mlops-task
+## General information
 
+Here's my simple program that deploys seldon custom resource to kubernetes cluster.
+
+### Requirements
+
+* Kubernetes cluster >= `v1.17.0` with Seldon Core installed
+* Configured authentication to the cluster through kubectl config (see kubectl documentation for details [here](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/#verify-kubectl-configuration))
+
+### How to use it
+
+
+
+
+### Requirements
+
+* Docker 
+
+    Docker min v18.09
+    Kubernetes cluster min v1.17.0 with istio and seldon core
 
 1. Prepare kubernetes cluster:
 
@@ -21,9 +39,7 @@ https://github.com/SeldonIO/seldon-core/tree/master/examples/auth
 
 https://istio.io/latest/docs/setup/platform-setup/kind/
 
-### Requirements
-    Docker min v18.09
-    Kubernetes cluster min v1.17.0 with istio and seldon core
+
 
 ### Building from source for local platform
 
@@ -66,3 +82,5 @@ ever growing list, prob not good for long running apps but here ok
 could probably use background policy for removal
 
 included basic test in scale package
+
+for simplicity commited binaries

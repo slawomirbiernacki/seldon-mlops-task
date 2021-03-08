@@ -28,7 +28,7 @@ func main() {
 	flag.Parse()
 	ctx := context.Background()
 
-	fmt.Printf("Deploying resource to namespace %s\n", namespace)
+	fmt.Printf("Deploying resource %s to namespace %s\n", deploymentFile, namespace)
 	deployment, err := createDeployment(ctx, namespace, deploymentFile)
 	if err != nil {
 		panic(err)
