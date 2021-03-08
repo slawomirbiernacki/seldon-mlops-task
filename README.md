@@ -1,6 +1,6 @@
 ## General information
 
-Here's my simple program that deploys seldon custom resource to kubernetes cluster.
+Here's my simple program that deploys seldon custom resource to kubernetes cluster and manipulates it.
 
 ## Assumptions and general thoughts
 
@@ -11,7 +11,7 @@ Here's my simple program that deploys seldon custom resource to kubernetes clust
 * I didn't optimize for binary size.
 * For watching events I used generic `clientset.CoreV1().Events()` interface, polling it in a simple loop to mimic a bit `kubectl describe`as it has human-readable descriptions. 
   Arbitrary decision - each event is printed only once, ignoring resource versions.
-* I have also explored using Seldon specific `SharedIndexInformer` for handling events but it was difficult to produce meaningful descriptions for update events. 
+* I have also explored using Seldon specific `SharedIndexInformer` for handling events but it was difficult to produce readable descriptions for update events. 
   However, if event watching functionality were to be used for any application logic, `SharedIndexInformer` would have been preferred.
 * I used polling when waiting for the deployment to become available or reach target scale. 
   I can imagine alternative design where the program observes events and react to them, eg issuing delete once replicas count has reached target number.
@@ -24,27 +24,28 @@ Here's my simple program that deploys seldon custom resource to kubernetes clust
 ## Requirements
 
 * Kubernetes cluster >= `v1.17.0` with Seldon Core installed
-* Configured authentication to the cluster through kubectl config (see kubectl [documentation](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/#verify-kubectl-configuration) for details)
+* Configured authentication to the cluster, eg through kubectl config (see kubectl [documentation](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/#verify-kubectl-configuration) for details).
+  Program uses `~/.kube/config` by default.
 
 ## How to use it
 
 There are 2 ways to run the program:
-1. Install it using local Go installation ( version >=`1.14`)
-2. Build a binary using Docker ( version >=`v18.09`)
+1. Install it using local Go installation
+2. Build a binary using Docker
 
 ###Install it locally using Go
 
-* Clone the repository `cd` inside it.
-  * Normally one can install go modules without cloning them manually. However, I have a `replace` directive present in module 
-    definition, causing `go install github.com/slawomirbiernacki/seldon-mlops-task` to fail. Is there a way to fix that issue? Perhaps, but I'm not that familiar with go modules (yet!). 
-    I noticed the same problem in seldon-core operator module so pragmatically assumed this is fine in the scope of this task.
+* Requires Go (>=`1.14`)
+* Clone the repository and `cd` inside it.
+  * Normally one can install go modules without cloning them manually. However, I have a `replace` directive present in go module 
+    definition, causing `go install github.com/slawomirbiernacki/seldon-mlops-task` to fail. Is there a way to fix that issue? Perhaps, but I'm not that familiar with go modules (yet!).
 * Run `go install .`.
 * That will install the binary in your `$GOPATH/bin`.
 * If you have above on your '$PATH' simply run it:
         
         seldon-mlops-task
 
-* Otherwise provide full path
+* Otherwise provide full path:
 
         $GOPATH/bin/seldon-mlops-task
 
@@ -60,14 +61,16 @@ Otherwise, use a flag to point to it. Use `seldon-mlops-task -h` to see availabl
 
 There's also `-kubeconfig` which should be respected when looking up kubernetes connection configuration but haven't tested it.
 
-Example to run with your deployment file in your namespace:
+Example running your deployment file in your namespace:
 
-        ./seldon-mlops-task -f your-file.yaml -n test-namespace
+        ./seldon-mlops-task -f your-file.yaml -n your-namespace
 
 ###Build a binary using Docker
 
 If you don't have Go installed, you can build a binary using Docker.
 
+* Requires `GNU Make`
+* Requires Docker ( >=`v18.09`)
 * Clone the repository and `cd` inside it.
 * Run `make build` to compile for local platform
   * Alternatively run `make build PLATFORM=linux/amd64` to specify target platform
