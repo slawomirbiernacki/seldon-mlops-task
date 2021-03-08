@@ -1,13 +1,13 @@
 PLATFORM=local
 
+.PHONY: build
+build: clean
+	make compile-in-docker
+
 .PHONY: build-dev
 build-dev: clean
 	go test ./...
 	go build -o bin/app
-
-.PHONY: build
-build: clean
-	make compile-in-docker
 
 .PHONY: compile-in-docker
 compile-in-docker:
