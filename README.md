@@ -4,6 +4,7 @@ Here's my simple program that deploys seldon custom resource to kubernetes clust
 
 ### Assumptions and general thoughts
 
+* I made a number of arbitrary decisions, explained below. Given I don't have that much experience with used interfaces some of them might not be optimal. Would be great to hear feedback on that!
 * I used `clientset` from seldon-core operator module to interact with the cluster. 
   It's a quite heavy dependency so given we don't do much seldon domain specific operations a generic dynamic client 
   could have been used instead. I did not optimize for binary size.
