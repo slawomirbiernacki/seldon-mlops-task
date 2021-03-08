@@ -5,8 +5,10 @@ import (
 	"flag"
 	"fmt"
 	v1 "github.com/seldonio/seldon-core/operator/apis/machinelearning.seldon.io/v1"
-	"seldon-mlops-task/operation"
+	corev1 "k8s.io/api/core/v1"
+	"seldon-mlops-task/seldondeployment"
 	"seldon-mlops-task/utils"
+	"sync"
 	"time"
 )
 
@@ -33,35 +35,46 @@ func main() {
 	}
 	name := deployment.GetName()
 
-	go operation.WatchDeploymentEvents(ctx, deployment, namespace)
+	// Here's some setup for parallel event processing.
+	// I use wait group and quit channel to allow event processor loop to exit gracefully. This ensures all events are processed before the program finishes.
+	// Quit channel is passed to the goroutine and internal loop exits when a signal is sent to it.
+	// The goroutine then notifies the wait group on which main routine is waiting at the end of the program.
+	quit := make(chan bool)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	defer func() {
+		quit <- true
+		wg.Wait()
+	}()
+	go watchDeploymentEvents(deployment, namespace, &wg, quit)
 
 	fmt.Println("Waiting for deployment to become available...")
-	err = operation.WaitUntilDeploymentStatus(ctx, name, namespace, v1.StatusStateAvailable, pollTimeout)
+	err = seldondeployment.WaitUntilDeploymentStatus(ctx, name, namespace, v1.StatusStateAvailable, pollTimeout)
 	if err != nil {
 		panic(err)
 	}
 
 	fmt.Printf("Deployed, scalling to %d replicas \n", replicas)
 
-	err = operation.ScaleDeployment(ctx, name, namespace, replicas)
+	err = seldondeployment.Scale(ctx, name, namespace, replicas)
 	if err != nil {
 		panic(err)
 	}
 
 	fmt.Println("Waiting for pods...")
-	err = operation.WaitUntilDeploymentScaled(ctx, name, namespace, replicas, pollTimeout)
+	err = seldondeployment.WaitUntilDeploymentScaled(ctx, name, namespace, replicas, pollTimeout)
 	if err != nil {
 		panic(err)
 	}
 
 	fmt.Printf("Scaled to %d replicas, deleting deployment\n", replicas)
-	err = operation.DeleteSeldonDeployment(ctx, name, namespace)
+	err = seldondeployment.DeleteDeployment(ctx, name, namespace)
 	if err != nil {
 		panic(err)
 	}
 
 	fmt.Println("Waiting for deletion...")
-	err = operation.WaitUntilDeploymentDeleted(ctx, name, namespace, pollTimeout)
+	err = seldondeployment.WaitUntilDeploymentDeleted(ctx, name, namespace, pollTimeout)
 	if err != nil {
 		panic(err)
 	}
@@ -77,10 +90,32 @@ func createDeployment(ctx context.Context, namespace, deploymentFilePath string)
 		return nil, err
 	}
 
-	deployment, err = operation.CreateSeldonDeployment(ctx, deployment, namespace)
+	deployment, err = seldondeployment.CreateDeployment(ctx, deployment, namespace)
 	if err != nil {
 		return nil, err
 	}
 
 	return deployment, nil
+}
+
+func watchDeploymentEvents(deployment *v1.SeldonDeployment, namespace string, wg *sync.WaitGroup, quit chan bool) {
+	defer wg.Done()
+	processor := seldondeployment.NewEventProcessor(deployment, namespace)
+	for {
+		select {
+		case <-quit:
+			return
+		default:
+			err := processor.ProcessNew(printEvent)
+			if err != nil {
+				panic(err)
+			}
+			time.Sleep(time.Second)
+		}
+	}
+}
+
+func printEvent(event corev1.Event) error {
+	fmt.Printf("Event: UUID: %s, Type: %s, FROM: %s, Reason: %s, message:%s, \n", event.UID, event.Type, event.Source.Component, event.Reason, event.Message)
+	return nil
 }

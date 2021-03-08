@@ -1,4 +1,4 @@
-package operation
+package seldondeployment
 
 import (
 	"context"
@@ -62,7 +62,7 @@ func WaitUntilDeploymentDeleted(ctx context.Context, deploymentName, namespace s
 func waitUntilCondition(ctx context.Context, deploymentName, namespace string, condition func(deployment *v1.SeldonDeployment, err error) (bool, error), pollTimeout time.Duration) error {
 
 	err := wait.PollImmediate(PollInterval, pollTimeout, func() (bool, error) {
-		deployment, err := GetSeldonDeployment(ctx, deploymentName, namespace)
+		deployment, err := GetDeployment(ctx, deploymentName, namespace)
 		return condition(deployment, err)
 	})
 

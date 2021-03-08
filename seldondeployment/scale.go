@@ -1,4 +1,4 @@
-package operation
+package seldondeployment
 
 import (
 	"context"
@@ -7,15 +7,15 @@ import (
 	"k8s.io/client-go/util/retry"
 )
 
-func ScaleDeployment(ctx context.Context, name, namespace string, scale int) error {
+func Scale(ctx context.Context, name, namespace string, scale int) error {
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		deployment, err := GetSeldonDeployment(ctx, name, namespace)
+		deployment, err := GetDeployment(ctx, name, namespace)
 		if err != nil {
 			return fmt.Errorf("failed to get latest version of deployment: %v", err)
 		}
 		updateScale(deployment, scale)
 
-		_, err = UpdateSeldonDeployment(ctx, deployment, namespace)
+		_, err = UpdateDeployment(ctx, deployment, namespace)
 		return err
 	})
 	if retryErr != nil {
@@ -24,7 +24,7 @@ func ScaleDeployment(ctx context.Context, name, namespace string, scale int) err
 	return nil
 }
 
-// Arbitrary, just override any settings with general replica count. Ignoring svcOrchSpec.replicas .
+// Arbitrary logic, just override any settings with general replica count. Ignoring svcOrchSpec.replicas .
 func updateScale(deployment *v1.SeldonDeployment, scale int) {
 	replicas := int32(scale)
 	deployment.Spec.Replicas = &replicas
