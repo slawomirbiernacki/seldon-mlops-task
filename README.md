@@ -31,7 +31,11 @@ https://istio.io/latest/docs/setup/platform-setup/kind/
 
 Build for other platform: (list of possible platforms https://golang.org/doc/install/source#environment)
 
-        make PLATFORM=windows/amd64
+        make PLATFORM=linux/amd64
+
+        To preserve existing executables:
+        make compile-in-docker PLATFORM=linux/amd64
+
 
 
 ### Usage
@@ -60,3 +64,5 @@ ever growing list, prob not good for long running apps but here ok
 
 
 could probably use background policy for removal
+
+included basic test in scale package

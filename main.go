@@ -48,7 +48,7 @@ func main() {
 	}()
 	go watchDeploymentEvents(deployment, namespace, &wg, quit)
 
-	fmt.Println("Waiting for deployment to become available...")
+	fmt.Printf("Waiting for deployment %s to become available...\n", name)
 	err = seldondeployment.WaitUntilDeploymentStatus(ctx, name, namespace, v1.StatusStateAvailable, pollTimeout)
 	if err != nil {
 		panic(err)

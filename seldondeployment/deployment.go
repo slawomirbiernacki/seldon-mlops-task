@@ -12,8 +12,8 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
-var seldonClientset *seldonclientset.Clientset
-var clientset *kubernetes.Clientset
+var seldonClientset seldonclientset.Interface
+var clientset kubernetes.Interface
 var deletePolicy = metav1.DeletePropagationForeground
 
 func init() {
