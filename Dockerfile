@@ -1,4 +1,4 @@
-FROM --platform=${BUILDPLATFORM} golang:1.14.3-alpine AS build
+FROM --platform=${BUILDPLATFORM} golang:1.9 AS build
 
 WORKDIR /workdir
 
@@ -16,7 +16,7 @@ ARG TARGETARCH
 
 # This takes a while every time - because of CGO_ENABLED=0 it recompiles all dependencies. Couldn't find a way to cache that before building my sources when using modules
 #RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH}  go build -o bin/seldon-mlops-task-${TARGETOS}-${TARGETARCH}
-RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH}  go build -a -tags netgo -ldflags '-w -extldflags "-static"' -o bin/seldon-mlops-task-${TARGETOS}-${TARGETARCH} *.go
+RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH}  go build -a -tags netgo -installsuffix netgo -ldflags "-linkmode external -extldflags -static" -o bin/seldon-mlops-task-${TARGETOS}-${TARGETARCH} *.go
 
 FROM scratch AS bin
 COPY --from=build /workdir/bin/ /
