@@ -73,4 +73,4 @@ Building can be done in two ways - using local Go installation or docker.
   * Alternatively run `make build PLATFORM=linux/amd64` to specify target platform
   * See [list of available platforms](https://golang.org/doc/install/source#environment)
 * Compiled binary will be available in `/bin`
-* Go make yourself some tea, it takes a while.
+* Might take a while on the first run, consider having a biscuit.
