@@ -7,7 +7,7 @@ build: clean
 .PHONY: build-dev
 build-dev: clean
 	go test ./...
-	go build -o bin/app
+	go build -o bin/seldon-mlops-task
 
 .PHONY: compile-in-docker
 compile-in-docker:

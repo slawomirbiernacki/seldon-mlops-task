@@ -2,7 +2,7 @@
 
 Here's my simple program that deploys seldon custom resource to kubernetes cluster.
 
-### Assumptions and general thoughts
+## Assumptions and general thoughts
 
 * I made a number of arbitrary decisions, explained below. Would be great to hear feedback on that given my limited experience with kubernetes.
 * I used `clientset` from seldon-core operator module to interact with the cluster. 
@@ -21,27 +21,35 @@ Here's my simple program that deploys seldon custom resource to kubernetes clust
   However, the event interface I used doesn't produce any events for deletions - the policy probably could be changed to a background one.
 * I included an example test for scaling logic. For production code more tests would be needed.
 
-### Requirements
+## Requirements
 
 * Kubernetes cluster >= `v1.17.0` with Seldon Core installed
 * Configured authentication to the cluster through kubectl config (see kubectl [documentation](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/#verify-kubectl-configuration) for details)
 
-### How to use it
+## How to use it
 
-* Binaries for popular platforms are available in the release, go to [github releases](https://github.com/slawomirbiernacki/seldon-mlops-task/releases/tag/v1.0.0) to download.
-To run the program with defaults using included test deployment file, run:
-  
-        For mac:
-        ./app-darwin-amd64
+There are 2 ways to run the program:
+1. Install it using local Go installation ( version >=`1.14`)
+2. Build a binary using Docker ( version >=`v18.09`)
 
-        For linux
-        ./app-linux-amd64
-  
-That will deploy `test-resource.yaml` to `default` namespace
+###Install it locally using Go
 
-If you use a different platform, see [Build from sources](#build-from-sources)
+* Clone the repository `cd` inside it.
+  * Normally one can install go modules without cloning them manually. However, I have a `replace` directive present in module 
+    definition, causing `go install github.com/slawomirbiernacki/seldon-mlops-task` to fail. Is there a way to fix that issue? Perhaps, but I'm not that familiar with go modules (yet!). 
+    I noticed the same problem in seldon-core operator module so pragmatically assumed this is fine in the scope of this task.
+* Run `go install .`.
+* That will install the binary in your `$GOPATH/bin`.
+* If you have above on your '$PATH' simply run it:
+        
+        seldon-mlops-task
 
-Run `./app-{your platform} -h` to see a list of flags that can be used to configure the program
+* Otherwise provide full path
+
+        $GOPATH/bin/seldon-mlops-task
+
+By default, the program tries to deploy provided `test-resource.yaml` to `default` namespace, the resource file should be in the directory from where you run the program. 
+Otherwise, use a flag to point to it. Use `seldon-mlops-task -h` to see available flags.
 
 | flag | function                                                                       | default value      |
 |------|--------------------------------------------------------------------------------|--------------------|
@@ -52,23 +60,15 @@ Run `./app-{your platform} -h` to see a list of flags that can be used to config
 
 There's also `-kubeconfig` which should be respected when looking up kubernetes connection configuration but haven't tested it.
 
-Run with your deployment file in your namespace:
+Example to run with your deployment file in your namespace:
 
-        ./app-{your platform} -f your-file.yaml -n test-namespace
+        ./seldon-mlops-task -f your-file.yaml -n test-namespace
 
-### <a id="build-from-sources"></a> Build from sources
+###Build a binary using Docker
 
-Building can be done in two ways - using local Go installation or docker. 
+If you don't have Go installed, you can build a binary using Docker.
 
-#### Build using local Go installation
-
-* Required Go installed in a version >= `1.14`
-* Run `make build-dev` to compile for local platform
-* Compiled binary will be available in `/bin`
-
-#### Build using docker
-
-* Required docker installation in a version >= `v18.09`
+* Clone the repository and `cd` inside it.
 * Run `make build` to compile for local platform
   * Alternatively run `make build PLATFORM=linux/amd64` to specify target platform
   * See [list of available platforms](https://golang.org/doc/install/source#environment)

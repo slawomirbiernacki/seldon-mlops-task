@@ -15,7 +15,7 @@ ARG TARGETOS
 ARG TARGETARCH
 
 # This takes a while every time - because of CGO_ENABLED=0 it recompiles all dependencies. Couldn't find a way to cache that before building my sources when using modules
-RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH}  go build -o bin/app-${TARGETOS}-${TARGETARCH}
+RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH}  go build -o bin/seldon-mlops-task-${TARGETOS}-${TARGETARCH}
 
 FROM scratch AS bin
 COPY --from=build /workdir/bin/ /
