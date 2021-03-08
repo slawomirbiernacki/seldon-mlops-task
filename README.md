@@ -4,19 +4,21 @@ Here's my simple program that deploys seldon custom resource to kubernetes clust
 
 ### Assumptions and general thoughts
 
-* I made a number of arbitrary decisions, explained below. Given I don't have that much experience with used interfaces some of them might not be optimal. Would be great to hear feedback on that!
+* I made a number of arbitrary decisions, explained below. Would be great to hear feedback on that given my limited experience with kubernetes.
 * I used `clientset` from seldon-core operator module to interact with the cluster. 
-  It's a quite heavy dependency so given we don't do much seldon domain specific operations a generic dynamic client 
-  could have been used instead. I did not optimize for binary size.
-* For watching events I used generic `clientset.CoreV1().Events()` interface, polling it in a simple loop to mimic a bit `kubectl describe`as it has human-readable descriptions. Arbitrary decision - each event is printed only once, ignoring resource versions.
-* I have also explored using Seldon specific `SharedIndexInformer` but it was difficult to produce meaningful descriptions for update events. 
+  The program doesn't do much seldon domain specific operations, so a generic dynamic client 
+  could have been used instead.
+* I didn't optimize for binary size.
+* For watching events I used generic `clientset.CoreV1().Events()` interface, polling it in a simple loop to mimic a bit `kubectl describe`as it has human-readable descriptions. 
+  Arbitrary decision - each event is printed only once, ignoring resource versions.
+* I have also explored using Seldon specific `SharedIndexInformer` for handling events but it was difficult to produce meaningful descriptions for update events. 
   However, if event watching functionality were to be used for any application logic, `SharedIndexInformer` would have been preferred.
 * I used polling when waiting for the deployment to become available or reach target scale. 
-  I can imagine alternative design where program operations observe events and react to them, eg issuing delete once replicas count has reached target number.
+  I can imagine alternative design where the program observes events and react to them, eg issuing delete once replicas count has reached target number.
 * In Seldon Core documentation I can see that deployments can specify replicas on [multiple levels](https://docs.seldon.io/projects/seldon-core/en/v1.1.0/graph/scaling.html).
-  My scaling logic is quite arbitrary - it overrides any given setting with top level `.spec.replicas`. (Except `.spec.predictors[].svcOrchSpec.replicas` which I ignore).
+  My scaling logic is simplified - it overrides any given setting with top level `.spec.replicas`. (Except `.spec.predictors[].svcOrchSpec.replicas` which I ignore).
 * I use `DeletePropagationForeground`policy when deleting to wait until deployment is fully deleted. 
-  However, event interface I use doesn't produce any events for deletions so probably could be changes to a background one.
+  However, the event interface I used doesn't produce any events for deletions - the policy probably could be changed to a background one.
 * I included an example test for scaling logic. For production code more tests would be needed.
 
 ### Requirements
@@ -26,7 +28,7 @@ Here's my simple program that deploys seldon custom resource to kubernetes clust
 
 ### How to use it
 
-* Binaries for popular platforms are available in the release, go [github releases](https://github.com/slawomirbiernacki/seldon-mlops-task/releases/tag/v1.0.0) to download.
+* Binaries for popular platforms are available in the release, go to [github releases](https://github.com/slawomirbiernacki/seldon-mlops-task/releases/tag/v1.0.0) to download.
 To run the program with defaults using included test deployment file, run:
   
         For mac:
@@ -37,7 +39,7 @@ To run the program with defaults using included test deployment file, run:
   
 That will deploy `test-resource.yaml` to `default` namespace
 
-If you use a different platform, see [Build from sources](#Build from sources)
+If you use a different platform, see [Build from sources](#build-from-sources)
 
 Run `./app-{your platform} -h` to see a list of flags that can be used to configure the program
 
@@ -54,13 +56,13 @@ Run with your deployment file in your namespace:
 
         ./app-{your platform} -f your-file.yaml -n test-namespace
 
-### Build from sources
+### <a id="build-from-sources"></a> Build from sources
 
 Building can be done in two ways - using local Go installation or docker. 
 
 #### Build using local Go installation
 
-* Required go installed in a version >= `1.14`
+* Required Go installed in a version >= `1.14`
 * Run `make build-dev` to compile for local platform
 * Compiled binary will be available in `/bin`
 
