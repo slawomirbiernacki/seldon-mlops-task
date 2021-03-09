@@ -17,9 +17,10 @@ var clientset kubernetes.Interface
 var deletePolicy = metav1.DeletePropagationForeground
 
 func init() {
-	config := ctrl.GetConfigOrDie()
-
-	var err error
+	config, err := ctrl.GetConfig()
+	if err != nil {
+		panic(err)
+	}
 	seldonClientset, err = seldonclientset.NewForConfig(config)
 
 	if err != nil {
