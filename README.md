@@ -41,7 +41,7 @@ There are 2 ways to run the program:
     definition, causing `go install github.com/slawomirbiernacki/seldon-mlops-task` to fail. Is there a way to fix that issue? Perhaps, but I'm not that familiar with go modules (yet!).
 * Run `go install .`.
 * That will install the binary in your `$GOPATH/bin`.
-* If you have above on your '$PATH' simply run it:
+* If you have above on your `$PATH` simply run it:
         
         seldon-mlops-task
 
