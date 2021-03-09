@@ -15,7 +15,6 @@ ARG TARGETOS
 ARG TARGETARCH
 
 RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH}  go build -o bin/seldon-mlops-task-${TARGETOS}-${TARGETARCH}
-#RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH}  go build -a -tags netgo -installsuffix netgo -ldflags "-linkmode external -extldflags -static" -o bin/seldon-mlops-task-${TARGETOS}-${TARGETARCH} *.go
 
 FROM scratch AS bin
 COPY --from=build /workdir/bin/ /
