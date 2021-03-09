@@ -33,7 +33,7 @@ There are 2 ways to run the program:
 1. Install it using local Go installation
 2. Build a binary using Docker
 
-###Install it locally using Go
+### Install it locally using Go
 
 * Requires Go (>=`1.14`)
 * Clone the repository and `cd` inside it.
@@ -64,7 +64,7 @@ Example running your deployment file in your namespace:
 
         ./seldon-mlops-task -f your-file.yaml -n your-namespace
 
-###Build a binary using Docker
+### Build a binary using Docker
 
 If you don't have Go installed, you can build a binary using Docker.
 
