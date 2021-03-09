@@ -40,6 +40,11 @@ func main() {
 		panic(err)
 	}
 
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		panic(err)
+	}
+
 	manager := seldondeployment.NewManager(seldonClientset, namespace)
 
 	fmt.Printf("Deploying resource %s to namespace %s\n", deploymentFile, namespace)
@@ -61,10 +66,6 @@ func main() {
 		wg.Wait()
 	}()
 
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		panic(err)
-	}
 	processor := seldondeployment.NewEventProcessor(clientset, deployment, namespace)
 	go watchDeploymentEvents(processor, &wg, quit)
 

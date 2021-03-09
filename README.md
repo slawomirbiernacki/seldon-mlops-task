@@ -4,27 +4,27 @@ Here's my simple program that deploys seldon custom resource to kubernetes clust
 
 ## Assumptions and general thoughts
 
-* I made a number of arbitrary decisions, explained below. Would be great to hear feedback on that given my limited experience with kubernetes.
+* I made a number of arbitrary decisions, explained below. Would be great to hear feedback on them!
 * I used `clientset` from seldon-core operator module to interact with the cluster. 
   The program doesn't do much seldon domain specific operations, so a generic dynamic client 
   could have been used instead.
 * I didn't optimize for binary size.
-* For watching events I used generic `clientset.CoreV1().Events()` interface, polling it in a simple loop to mimic a bit `kubectl describe`as it has human-readable descriptions. 
+* For watching events I used generic `clientset.CoreV1().Events()` interface, polling it in a simple loop to mimic `kubectl describe` a bit, as it has human-readable descriptions. 
   Arbitrary decision - each event is printed only once, ignoring resource versions.
 * I have also explored using Seldon specific `SharedIndexInformer` for handling events but it was difficult to produce readable descriptions for update events. 
-  However, if event watching functionality were to be used for any application logic, `SharedIndexInformer` would have been preferred.
+  However, if event watching functionality were to be used for any application logic, `SharedIndexInformer` probably would have been preferred.
 * I used polling when waiting for the deployment to become available or reach target scale. 
-  I can imagine alternative design where the program observes events and react to them, eg issuing delete once replicas count has reached target number.
+  I can imagine alternative design where the program observes events and reacts to them, eg issuing delete once replicas count has reached target number.
 * In Seldon Core documentation I can see that deployments can specify replicas on [multiple levels](https://docs.seldon.io/projects/seldon-core/en/v1.1.0/graph/scaling.html).
   My scaling logic is simplified - it overrides any given setting with top level `.spec.replicas`. (Except `.spec.predictors[].svcOrchSpec.replicas` which I ignore).
 * I use `DeletePropagationForeground`policy when deleting to wait until deployment is fully deleted. 
-  However, the event interface I used doesn't produce any events for deletions - the policy probably could be changed to a background one.
+  However, the event interface I used doesn't produce any events for deletions - so the policy probably could be changed to a background one.
 * I included an example test for scaling logic. For production code more tests would be needed.
 
 ## Requirements
 
 * Kubernetes cluster >= `v1.17.0` with Seldon Core installed
-* Configured authentication to the cluster, eg through kubeconfig (see kubectl [documentation](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/) for details).
+* Configured kubeconfig to connect to the cluster (see kubectl [documentation](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/) for details).
   Program uses `~/.kube/config` by default.
 
 ## How to use it
@@ -40,14 +40,11 @@ There are 2 ways to run the program:
   * Normally one can install go modules without cloning them manually. However, I have a `replace` directive present in go module 
     definition, causing `go install github.com/slawomirbiernacki/seldon-mlops-task` to fail. Is there a way to fix that issue? Perhaps, but I'm not that familiar with go modules (yet!).
 * Run `go install .`.
-* That will install the binary in your `$GOPATH/bin`.
-* If you have above on your `$PATH` simply run it:
-        
+* That will install the binary in your `$GOPATH/bin`. To run use: 
+          
         seldon-mlops-task
-
-* Otherwise provide full path:
-
-        $GOPATH/bin/seldon-mlops-task
+          
+* Alternatively just build it to a local binary using `go build -o seldon-mlops-task`.
 
 By default, the program tries to deploy provided `test-resource.yaml` to `default` namespace, the resource file should be in the directory from where you run the program. 
 Otherwise, use a flag to point to it. Use `seldon-mlops-task -h` to see available flags.
