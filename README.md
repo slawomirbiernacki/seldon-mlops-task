@@ -24,7 +24,7 @@ Here's my simple program that deploys seldon custom resource to kubernetes clust
 ## Requirements
 
 * Kubernetes cluster >= `v1.17.0` with Seldon Core installed
-* Configured authentication to the cluster, eg through kubectl config (see kubectl [documentation](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/#verify-kubectl-configuration) for details).
+* Configured authentication to the cluster, eg through kubeconfig (see kubectl [documentation](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/) for details).
   Program uses `~/.kube/config` by default.
 
 ## How to use it
@@ -52,13 +52,13 @@ There are 2 ways to run the program:
 By default, the program tries to deploy provided `test-resource.yaml` to `default` namespace, the resource file should be in the directory from where you run the program. 
 Otherwise, use a flag to point to it. Use `seldon-mlops-task -h` to see available flags.
 
-| flag          | function                                                                       | default value      |
-|-------------- |--------------------------------------------------------------------------------|--------------------|
-| -f            | Path to your deployment file                                                   | test-resource.yaml |
-| -n            | Namespace for your seldon deployment                                           | default            |
-| -r            | Replica number to scale to during program operation                            | 2                  |
-| -pt           | Poling timeout for any wait operations; eg waiting for deployment availability | 120s               |
-| -kubeconfig   | Path to kubeconfig                                                             | ~/.kube.config     |
+| flag        | function                                                                       | default value      |
+|-------------|--------------------------------------------------------------------------------|--------------------|
+| -f          | Path to your deployment file                                                   | test-resource.yaml |
+| -n          | Namespace for your seldon deployment                                           | default            |
+| -r          | Replica number to scale to during program operation                            | 2                  |
+| -pt         | Poling timeout for any wait operations; eg waiting for deployment availability | 120s               |
+| -kubeconfig | Path to kubeconfig                                                             | ~/.kube.config     |
 
 Example running your deployment file in your namespace:
 
