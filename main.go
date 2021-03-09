@@ -5,9 +5,12 @@ import (
 	"flag"
 	"fmt"
 	v1 "github.com/seldonio/seldon-core/operator/apis/machinelearning.seldon.io/v1"
+	seldonclientset "github.com/seldonio/seldon-core/operator/client/machinelearning.seldon.io/v1/clientset/versioned"
 	"github.com/slawomirbiernacki/seldon-mlops-task/seldondeployment"
 	"github.com/slawomirbiernacki/seldon-mlops-task/utils"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/kubernetes"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sync"
 	"time"
 )
@@ -28,8 +31,19 @@ func main() {
 	flag.Parse()
 	ctx := context.Background()
 
+	config, err := ctrl.GetConfig()
+	if err != nil {
+		panic(err)
+	}
+	seldonClientset, err := seldonclientset.NewForConfig(config)
+	if err != nil {
+		panic(err)
+	}
+
+	manager := seldondeployment.NewManager(seldonClientset, namespace)
+
 	fmt.Printf("Deploying resource %s to namespace %s\n", deploymentFile, namespace)
-	deployment, err := createDeployment(ctx, namespace, deploymentFile)
+	deployment, err := createDeployment(ctx, manager, deploymentFile)
 	if err != nil {
 		panic(err)
 	}
@@ -46,35 +60,41 @@ func main() {
 		quit <- true
 		wg.Wait()
 	}()
-	go watchDeploymentEvents(deployment, namespace, &wg, quit)
+
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		panic(err)
+	}
+	processor := seldondeployment.NewEventProcessor(clientset, deployment, namespace)
+	go watchDeploymentEvents(processor, &wg, quit)
 
 	fmt.Printf("Waiting for deployment %s to become available...\n", name)
-	err = seldondeployment.WaitUntilDeploymentStatus(ctx, name, namespace, v1.StatusStateAvailable, pollTimeout)
+	err = manager.WaitUntilDeploymentStatus(ctx, name, v1.StatusStateAvailable, pollTimeout)
 	if err != nil {
 		panic(err)
 	}
 
 	fmt.Printf("Deployed, scalling to %d replicas \n", replicas)
 
-	err = seldondeployment.Scale(ctx, name, namespace, replicas)
+	err = manager.Scale(ctx, name, replicas)
 	if err != nil {
 		panic(err)
 	}
 
 	fmt.Println("Waiting for pods...")
-	err = seldondeployment.WaitUntilDeploymentScaled(ctx, name, namespace, replicas, pollTimeout)
+	err = manager.WaitUntilDeploymentScaled(ctx, name, replicas, pollTimeout)
 	if err != nil {
 		panic(err)
 	}
 
 	fmt.Printf("Scaled to %d replicas, deleting deployment\n", replicas)
-	err = seldondeployment.DeleteDeployment(ctx, name, namespace)
+	err = manager.DeleteDeployment(ctx, name)
 	if err != nil {
 		panic(err)
 	}
 
 	fmt.Println("Waiting for deletion...")
-	err = seldondeployment.WaitUntilDeploymentDeleted(ctx, name, namespace, pollTimeout)
+	err = manager.WaitUntilDeploymentDeleted(ctx, name, pollTimeout)
 	if err != nil {
 		panic(err)
 	}
@@ -82,7 +102,7 @@ func main() {
 	fmt.Print("Deleted, program has finished!\n")
 }
 
-func createDeployment(ctx context.Context, namespace, deploymentFilePath string) (*v1.SeldonDeployment, error) {
+func createDeployment(ctx context.Context, manager *seldondeployment.Manager, deploymentFilePath string) (*v1.SeldonDeployment, error) {
 
 	deployment := &v1.SeldonDeployment{}
 	err := utils.ParseDeploymentFromFile(deploymentFilePath, deployment)
@@ -90,7 +110,7 @@ func createDeployment(ctx context.Context, namespace, deploymentFilePath string)
 		return nil, err
 	}
 
-	deployment, err = seldondeployment.CreateDeployment(ctx, deployment, namespace)
+	deployment, err = manager.CreateDeployment(ctx, deployment)
 	if err != nil {
 		return nil, err
 	}
@@ -98,9 +118,9 @@ func createDeployment(ctx context.Context, namespace, deploymentFilePath string)
 	return deployment, nil
 }
 
-func watchDeploymentEvents(deployment *v1.SeldonDeployment, namespace string, wg *sync.WaitGroup, quit chan bool) {
+func watchDeploymentEvents(processor *seldondeployment.EventProcessor, wg *sync.WaitGroup, quit chan bool) {
 	defer wg.Done()
-	processor := seldondeployment.NewEventProcessor(deployment, namespace)
+
 	for {
 		select {
 		case <-quit:

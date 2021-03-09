@@ -11,7 +11,7 @@ import (
 
 const PollInterval = time.Second
 
-func WaitUntilDeploymentStatus(ctx context.Context, deploymentName, namespace string, status v1.StatusState, pollTimeout time.Duration) error {
+func (manager *Manager) WaitUntilDeploymentStatus(ctx context.Context, deploymentName string, status v1.StatusState, pollTimeout time.Duration) error {
 
 	condition := func(deployment *v1.SeldonDeployment, err error) (bool, error) {
 		if err != nil {
@@ -24,10 +24,10 @@ func WaitUntilDeploymentStatus(ctx context.Context, deploymentName, namespace st
 
 		return false, nil
 	}
-	return waitUntilCondition(ctx, deploymentName, namespace, condition, pollTimeout)
+	return waitUntilCondition(ctx, manager, deploymentName, condition, pollTimeout)
 }
 
-func WaitUntilDeploymentScaled(ctx context.Context, deploymentName, namespace string, scale int, pollTimeout time.Duration) error {
+func (manager *Manager) WaitUntilDeploymentScaled(ctx context.Context, deploymentName string, scale int, pollTimeout time.Duration) error {
 
 	condition := func(deployment *v1.SeldonDeployment, err error) (bool, error) {
 		if err != nil {
@@ -44,10 +44,10 @@ func WaitUntilDeploymentScaled(ctx context.Context, deploymentName, namespace st
 		}
 		return finished, nil
 	}
-	return waitUntilCondition(ctx, deploymentName, namespace, condition, pollTimeout)
+	return waitUntilCondition(ctx, manager, deploymentName, condition, pollTimeout)
 }
 
-func WaitUntilDeploymentDeleted(ctx context.Context, deploymentName, namespace string, pollTimeout time.Duration) error {
+func (manager *Manager) WaitUntilDeploymentDeleted(ctx context.Context, deploymentName string, pollTimeout time.Duration) error {
 
 	condition := func(deployment *v1.SeldonDeployment, err error) (bool, error) {
 		if err != nil && errors.IsNotFound(err) {
@@ -56,13 +56,13 @@ func WaitUntilDeploymentDeleted(ctx context.Context, deploymentName, namespace s
 		return false, err
 	}
 
-	return waitUntilCondition(ctx, deploymentName, namespace, condition, pollTimeout)
+	return waitUntilCondition(ctx, manager, deploymentName, condition, pollTimeout)
 }
 
-func waitUntilCondition(ctx context.Context, deploymentName, namespace string, condition func(deployment *v1.SeldonDeployment, err error) (bool, error), pollTimeout time.Duration) error {
+func waitUntilCondition(ctx context.Context, manager *Manager, deploymentName string, condition func(deployment *v1.SeldonDeployment, err error) (bool, error), pollTimeout time.Duration) error {
 
 	err := wait.PollImmediate(PollInterval, pollTimeout, func() (bool, error) {
-		deployment, err := GetDeployment(ctx, deploymentName, namespace)
+		deployment, err := manager.GetDeployment(ctx, deploymentName)
 		return condition(deployment, err)
 	})
 

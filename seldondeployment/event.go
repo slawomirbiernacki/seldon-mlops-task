@@ -5,6 +5,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/kubernetes"
 )
 
 var scheme = runtime.NewScheme()
@@ -20,12 +21,13 @@ type EventProcessor struct {
 	seen       map[types.UID]bool
 	deployment *seldonv1.SeldonDeployment
 	namespace  string
+	clientset  kubernetes.Interface
 }
 
 // Fetches a batch of events and processes them. Function is incremental, skipping any previously seen events.
 // Event version is ignored - event identity is based solely on UUID, therefore any given event is processed only once.
 func (ep *EventProcessor) ProcessNew(eventProcessor func(event corev1.Event) error) error {
-	events, err := clientset.CoreV1().Events(ep.namespace).Search(scheme, ep.deployment)
+	events, err := ep.clientset.CoreV1().Events(ep.namespace).Search(scheme, ep.deployment)
 	if err != nil {
 		return err
 	}
@@ -43,11 +45,12 @@ func (ep *EventProcessor) ProcessNew(eventProcessor func(event corev1.Event) err
 }
 
 // Stateful event processor. It has a cache to remember processed events. Quite naive and probably not good idea for production code, pragmatically assumed here it's ok.
-func NewEventProcessor(deployment *seldonv1.SeldonDeployment, namespace string) *EventProcessor {
+func NewEventProcessor(clientset kubernetes.Interface, deployment *seldonv1.SeldonDeployment, namespace string) *EventProcessor {
 	watcher := &EventProcessor{
 		seen:       make(map[types.UID]bool),
 		deployment: deployment,
 		namespace:  namespace,
+		clientset:  clientset,
 	}
 	return watcher
 }

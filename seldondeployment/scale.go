@@ -7,15 +7,15 @@ import (
 	"k8s.io/client-go/util/retry"
 )
 
-func Scale(ctx context.Context, name, namespace string, scale int) error {
+func (manager *Manager) Scale(ctx context.Context, name string, scale int) error {
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		deployment, err := GetDeployment(ctx, name, namespace)
+		deployment, err := manager.GetDeployment(ctx, name)
 		if err != nil {
 			return fmt.Errorf("failed to get latest version of deployment: %v", err)
 		}
 		updateScale(deployment, scale)
 
-		_, err = UpdateDeployment(ctx, deployment, namespace)
+		_, err = manager.UpdateDeployment(ctx, deployment)
 		return err
 	})
 	if retryErr != nil {

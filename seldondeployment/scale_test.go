@@ -43,10 +43,11 @@ func TestScale(t *testing.T) {
 		},
 	}
 	targetReplicas := 2
-	seldonClientset = seldonfake.NewSimpleClientset(&deployment)
+	seldonClientset := seldonfake.NewSimpleClientset(&deployment)
+	deploymentManager := NewManager(seldonClientset, namespace)
 
 	//when
-	err := Scale(ctx, name, namespace, targetReplicas)
+	err := deploymentManager.Scale(ctx, name, targetReplicas)
 	if err != nil {
 		t.Fatal(err)
 	}
