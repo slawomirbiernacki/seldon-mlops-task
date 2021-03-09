@@ -58,7 +58,7 @@ Otherwise, use a flag to point to it. Use `seldon-mlops-task -h` to see availabl
 | -n          | Namespace for your seldon deployment                                           | default            |
 | -r          | Replica number to scale to during program operation                            | 2                  |
 | -pt         | Poling timeout for any wait operations; eg waiting for deployment availability | 120s               |
-| -kubeconfig | Path to kubeconfig                                                             | ~/.kube.config     |
+| -kubeconfig | Path to kubeconfig                                                             | ~/.kube/config     |
 
 Example running your deployment file in your namespace:
 
